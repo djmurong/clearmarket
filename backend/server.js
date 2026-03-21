@@ -1,7 +1,7 @@
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
-const { getSentiment, getTrending } = require('./api');
+const { getTrending, getStockPrice, getSentiment, explainStock } = require('./api');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -16,6 +16,13 @@ app.get('/api/trending', async (req, res) => {
     res.json(data);
 });
 
+// GET /api/price/:symbol
+// Returns current price and volume for a stock
+app.get('/api/price/:symbol', async (req, res) => {
+    const data = await getStockPrice(req.params.symbol);
+    res.json(data);
+});
+
 // GET /api/sentiment?symbols=AAPL,TSLA,MSFT
 // Returns sentiment score and label for each symbol
 app.get('/api/sentiment', async (req, res) => {
@@ -25,6 +32,14 @@ app.get('/api/sentiment', async (req, res) => {
     const symbols = req.query.symbols.split(',');
     const data = await getSentiment(symbols);
     res.json(data);
+});
+
+// GET /api/explain/:symbol
+// Returns price data + plain English AI explanation (for beginners)
+app.get('/api/explain/:symbol', async (req, res) => {
+    const stockData = await getStockPrice(req.params.symbol);
+    const explanation = await explainStock(stockData);
+    res.json({ ...stockData, explanation });
 });
 
 app.listen(PORT, () => {
