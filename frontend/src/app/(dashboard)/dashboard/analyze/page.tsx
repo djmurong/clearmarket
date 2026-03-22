@@ -34,9 +34,7 @@ export default function AnalyzePage() {
       const json: InterpretationResult = await res.json();
       setResult(json);
     } catch (err) {
-      setError(
-        err instanceof Error ? err.message : "Something went wrong."
-      );
+      setError(err instanceof Error ? err.message : "Something went wrong.");
     } finally {
       setLoading(false);
     }
@@ -65,9 +63,7 @@ export default function AnalyzePage() {
 
       {result && (
         <div className="space-y-3">
-          <h2 className="text-xs font-medium text-muted">
-            Result
-          </h2>
+          <h2 className="text-xs font-medium text-muted">Result</h2>
           <ResultCard result={result} />
         </div>
       )}
