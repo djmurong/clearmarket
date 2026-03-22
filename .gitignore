@@ -1,2 +1,29 @@
 .env
 node_modules/
+
+# Development and testing files
+**/test-*.js
+**/check-*.js
+**/supabase.js
+**/*TEST*.ps1
+**/*TEST*.md
+**/API_TEST_GUIDE.md
+
+# Build outputs
+.next/
+dist/
+build/
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/

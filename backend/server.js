@@ -1,7 +1,7 @@
 require('dotenv').config({ path: require('path').join(__dirname, '.env') });
 const express = require('express');
 const cors = require('cors');
-const { getTrending, getStockPrice, getSentiment, explainStock } = require('./api');
+const { getTrending, getStockPrice, getSentiment, explainStock, signUp, logIn, logOut } = require('./api');
 const supabase = require('./db');
 
 const app = express();
@@ -126,7 +126,7 @@ app.post('/api/trade/buy', async (req, res) => {
     // Log to activity
     await supabase.from('activity').insert({
         user_id,
-        action: `Bought ${shares} shares of ${ticker} at $${stockData.price}`,
+        action: 'buy',
         amount: cost
     });
 
@@ -190,11 +190,125 @@ app.post('/api/trade/sell', async (req, res) => {
     // Log to activity
     await supabase.from('activity').insert({
         user_id,
-        action: `Sold ${shares} shares of ${ticker} at $${stockData.price}`,
+        action: 'sell',
         amount: proceeds
     });
 
     res.json({ message: 'Sell successful', remaining_balance: newBalance });
+});
+
+// GET /api/activity/:userId
+app.get('/api/activity/:userId', async (req, res) => {
+    const userId = req.params.userId;
+    const limit = parseInt(req.query.limit, 10) || 100;
+
+    if (!userId) return res.status(400).json({ error: 'userId is required' });
+
+    const { data, error } = await supabase
+        .from('activity')
+        .select('*')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false })
+        .limit(limit);
+
+    if (error) return res.status(500).json({ error: error.message });
+    res.json(data);
+});
+
+// POST /api/activity
+app.post('/api/activity', async (req, res) => {
+    const { user_id, action, amount } = req.body;
+    if (!user_id || !action) {
+        return res.status(400).json({ error: 'user_id and action are required' });
+    }
+    if (!['buy', 'sell', 'watch'].includes(action)) {
+        return res.status(400).json({ error: "action must be one of 'buy','sell','watch'" });
+    }
+
+    const { data, error } = await supabase.from('activity').insert({ user_id, action, amount });
+    if (error) return res.status(500).json({ error: error.message });
+    res.json(data[0]);
+});
+
+// GET /api/watchlist/:userId
+app.get('/api/watchlist/:userId', async (req, res) => {
+    const userId = req.params.userId;
+    if (!userId) return res.status(400).json({ error: 'userId is required' });
+
+    const { data, error } = await supabase
+        .from('watchlists')
+        .select('*')
+        .eq('user_id', userId)
+        .order('company_name', { ascending: true });
+
+    if (error) return res.status(500).json({ error: error.message });
+    res.json(data);
+});
+
+// POST /api/watchlist
+app.post('/api/watchlist', async (req, res) => {
+    const { user_id, ticker, company_name, current_price, percent_change } = req.body;
+    if (!user_id || !ticker) return res.status(400).json({ error: 'user_id and ticker are required' });
+
+    const { data, error } = await supabase.from('watchlists').insert({
+        user_id,
+        ticker,
+        company_name,
+        current_price,
+        percent_change
+    });
+    if (error) return res.status(500).json({ error: error.message });
+
+    await supabase.from('activity').insert({ user_id, action: 'watch', amount: 0 });
+
+    res.json(data[0]);
+});
+
+// DELETE /api/watchlist/:id
+app.delete('/api/watchlist/:id', async (req, res) => {
+    const id = req.params.id;
+    if (!id) return res.status(400).json({ error: 'watchlist item id is required' });
+
+    const { error } = await supabase.from('watchlists').delete().eq('id', id);
+    if (error) return res.status(500).json({ error: error.message });
+    res.json({ message: 'Deleted' });
+});
+
+// GET /api/news
+app.get('/api/news', async (req, res) => {
+    const { data, error } = await supabase.from('news').select('*').order('publish_date', { ascending: false });
+    if (error) return res.status(500).json({ error: error.message });
+    res.json(data);
+});
+
+// GET /api/user_news/:userId
+app.get('/api/user_news/:userId', async (req, res) => {
+    const userId = req.params.userId;
+    if (!userId) return res.status(400).json({ error: 'userId is required' });
+
+    const { data, error } = await supabase
+        .from('user_news')
+        .select('*, news(*)')
+        .eq('user_id', userId)
+        .order('news.publish_date', { ascending: false });
+
+    if (error) return res.status(500).json({ error: error.message });
+    res.json(data);
+});
+
+// POST /api/user_news/mark-seen
+app.post('/api/user_news/mark-seen', async (req, res) => {
+    const { user_id, news_id } = req.body;
+    if (!user_id || !news_id) return res.status(400).json({ error: 'user_id and news_id are required' });
+
+    const { error } = await supabase
+        .from('user_news')
+        .update({ seen: true })
+        .eq('user_id', user_id)
+        .eq('news_id', news_id);
+
+    if (error) return res.status(500).json({ error: error.message });
+    res.json({ message: 'marked as seen' });
 });
 
 app.listen(PORT, () => {
