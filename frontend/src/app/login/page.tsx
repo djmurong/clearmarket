@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import api from "@/lib/apiClient";
 
 const features = [
   "AI-powered analysis",
@@ -28,10 +29,34 @@ export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    router.push("/dashboard");
+    setError(null);
+    setLoading(true);
+
+    try {
+      const response = await api.login(email, password);
+      localStorage.setItem("authToken", response.token);
+      localStorage.setItem("userId", response.user.id);
+      router.push("/dashboard");
+    } catch (err) {
+      if (err instanceof Error) {
+        if (err.message.includes("401")) {
+          setError("Invalid email or password");
+        } else if (err.message.includes("503")) {
+          setError("Server is temporarily unavailable");
+        } else {
+          setError(err.message || "Login failed. Please try again.");
+        }
+      } else {
+        setError("An unexpected error occurred");
+      }
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -51,7 +76,7 @@ export default function LoginPage() {
 
           {/* Tagline */}
           <div className="space-y-6 max-w-md">
-            <h1 className="text-[40px] xl:text-[46px] font-bold leading-[1.1] tracking-tight">
+            <h1 className="text-[40px] xl:text-[46px] font-serif tracking-[-0.02em] leading-[1.1]">
               Investing insights
               <br />
               for those who
@@ -123,7 +148,7 @@ export default function LoginPage() {
 
         <div className="w-full max-w-sm space-y-8">
           <div className="space-y-2">
-            <h2 className="text-[28px] font-bold tracking-tight text-foreground">
+            <h2 className="text-[28px] font-serif tracking-[-0.02em] text-foreground">
               Log in
             </h2>
             <p className="text-sm text-muted">
@@ -134,6 +159,12 @@ export default function LoginPage() {
             </p>
           </div>
 
+          {error && (
+            <div className="rounded-lg border border-red-200 bg-red-50 p-4">
+              <p className="text-sm text-red-700">{error}</p>
+            </div>
+          )}
+
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <input
@@ -141,7 +172,8 @@ export default function LoginPage() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="Email"
-                className="w-full h-12 rounded-xl border border-card-border bg-background px-4 text-sm text-foreground placeholder:text-muted-dim focus:outline-none focus:border-accent focus:ring-2 focus:ring-accent/10 transition-colors"
+                disabled={loading}
+                className="w-full h-12 rounded-xl border border-card-border bg-background px-4 text-sm text-foreground placeholder:text-muted-dim focus:outline-none focus:border-accent focus:ring-2 focus:ring-accent/10 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 required
               />
             </div>
@@ -152,13 +184,15 @@ export default function LoginPage() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="Password"
-                className="w-full h-12 rounded-xl border border-card-border bg-background px-4 pr-12 text-sm text-foreground placeholder:text-muted-dim focus:outline-none focus:border-accent focus:ring-2 focus:ring-accent/10 transition-colors"
+                disabled={loading}
+                className="w-full h-12 rounded-xl border border-card-border bg-background px-4 pr-12 text-sm text-foreground placeholder:text-muted-dim focus:outline-none focus:border-accent focus:ring-2 focus:ring-accent/10 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 required
               />
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-dim hover:text-muted transition-colors"
+                disabled={loading}
+                className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-dim hover:text-muted transition-colors disabled:opacity-50"
                 aria-label={showPassword ? "Hide password" : "Show password"}
               >
                 {showPassword ? (
@@ -186,10 +220,19 @@ export default function LoginPage() {
             <div className="flex justify-end pt-2">
               <button
                 type="submit"
-                disabled={!email.trim() || !password.trim()}
-                className="h-11 rounded-full bg-foreground px-8 text-sm font-medium text-background hover:bg-foreground/85 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                disabled={!email.trim() || !password.trim() || loading}
+                className="h-11 rounded-full bg-foreground px-8 text-sm font-medium text-background hover:bg-foreground/85 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
               >
-                Log in
+                {loading ? (
+                  <>
+                    <svg className="w-4 h-4 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 2v4m0 12v4M4.22 4.22l2.83 2.83m5.7 5.7l2.83 2.83M2 12h4m12 0h4m-10.78 9.78l2.83-2.83m5.7-5.7l2.83-2.83M4.22 19.78l2.83-2.83m5.7-5.7l2.83-2.83" />
+                    </svg>
+                    Logging in...
+                  </>
+                ) : (
+                  "Log in"
+                )}
               </button>
             </div>
           </form>

@@ -28,7 +28,7 @@ export default function TrendingStory({ article }: { article: NewsArticle }) {
         <div className="flex items-center gap-2 text-[11px] text-muted">
           <span className="font-medium">{article.source}</span>
           <span>&middot;</span>
-          <span>{getTimeAgo(article.timestamp)}</span>
+          <span>{getTimeAgo(article.publishedAt)}</span>
         </div>
 
         <h3 className="text-sm font-semibold text-foreground leading-snug line-clamp-2 group-hover:text-accent transition-colors">
@@ -39,9 +39,9 @@ export default function TrendingStory({ article }: { article: NewsArticle }) {
           {article.summary}
         </p>
 
-        {article.tickers.length > 0 && (
+        {article.symbols.length > 0 && (
           <div className="flex flex-wrap gap-1">
-            {article.tickers.map((t) => (
+            {article.symbols.map((t) => (
               <span
                 key={t}
                 className="rounded-full bg-surface border border-card-border px-2 py-0.5 text-[10px] font-mono text-muted"
@@ -87,10 +87,10 @@ export default function TrendingStory({ article }: { article: NewsArticle }) {
       {active === "simplified" && (
         <div className="border-t border-accent-border bg-accent-surface px-4 py-3 space-y-1">
           <p className="text-[10px] font-semibold text-accent uppercase tracking-widest">
-            Simplified
+            Sentiment
           </p>
           <p className="text-xs text-foreground leading-relaxed">
-            {article.simplified}
+            {article.sentimentLabel} (score: {article.sentimentScore.toFixed(2)})
           </p>
         </div>
       )}
@@ -98,10 +98,23 @@ export default function TrendingStory({ article }: { article: NewsArticle }) {
       {active === "takeaway" && (
         <div className="border-t border-accent-border bg-accent-surface px-4 py-3 space-y-1">
           <p className="text-[10px] font-semibold text-accent uppercase tracking-widest">
-            Key Takeaway
+            Key Info
           </p>
           <p className="text-xs text-foreground leading-relaxed">
-            {article.keyTakeaway}
+            Relevance: {(article.relevanceScore * 100).toFixed(0)}%
+            {article.url && (
+              <>
+                {" — "}
+                <a
+                  href={article.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="underline text-accent"
+                >
+                  Read full article
+                </a>
+              </>
+            )}
           </p>
         </div>
       )}

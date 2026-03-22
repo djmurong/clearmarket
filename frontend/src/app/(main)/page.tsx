@@ -1,74 +1,106 @@
 import Link from "next/link";
-import { mockNews, categoryLabels, getTimeAgo } from "@/lib/mockNews";
+import { categoryLabels, getTimeAgo, NewsArticle } from "@/lib/mockNews";
 
-const previewArticles = mockNews.filter((a) => a.trending).slice(0, 3);
+const previewArticles: NewsArticle[] = [];
 
 export default function Home() {
   return (
     <div className="flex flex-col">
       {/* Hero */}
-      <section className="bg-background">
-        <div className="mx-auto max-w-6xl px-6 py-20 sm:py-28 grid sm:grid-cols-2 gap-12 items-center">
-          <div className="space-y-6">
-            <h1 className="text-4xl sm:text-[52px] font-bold tracking-tight leading-[1.1] text-foreground">
-              Understand
-              <br />
-              Financial Opinions
+      <section className="bg-background pt-24 pb-32">
+        <div className="mx-auto max-w-7xl px-6">
+          <div className="max-w-[1000px]">
+            <h1 className="text-[60px] sm:text-[85px] lg:text-[110px] font-serif tracking-[-0.03em] leading-[0.95] text-foreground">
+              <span className="text-foreground/30 block -mb-4 sm:-mb-6 lg:-mb-8">Investing for those</span>
+              who want it simplified
             </h1>
-            <p className="text-base text-muted leading-relaxed max-w-md">
-              Get insights from professional analysts and financial reports.
-              Simplified into plain language anyone can understand.
-            </p>
-            <div className="flex items-center gap-3 pt-1">
-              <Link
-                href="/login"
-                className="inline-flex h-11 items-center justify-center rounded-full bg-accent px-7 text-white text-sm font-medium hover:bg-accent-hover transition-colors"
-              >
-                Sign up
-              </Link>
-              <Link
-                href="/get-started"
-                className="inline-flex h-11 items-center text-accent text-sm font-medium hover:underline"
-              >
-                Learn more
-              </Link>
-            </div>
           </div>
-          <div className="hidden sm:block" aria-hidden>
-            <div className="rounded-2xl bg-surface border border-card-border p-6 space-y-4">
-              <div className="flex items-center gap-3">
-                <span className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-accent/10 text-accent font-bold text-sm">
-                  GS
-                </span>
-                <div>
-                  <p className="text-sm font-semibold text-foreground">Goldman Sachs</p>
-                  <p className="text-xs text-muted">Analyst Report</p>
+
+          <div className="mt-16 flex flex-col sm:flex-row sm:items-center justify-between gap-10">
+            <div className="flex flex-wrap items-center gap-x-8 gap-y-4 text-[15px] font-medium text-foreground">
+              <div className="flex items-center gap-2.5">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" />
+                </svg>
+                Risk-free paper trading
+              </div>
+              <div className="flex items-center gap-2.5">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                </svg>
+                Jargon-free analysis
+              </div>
+              <div className="flex items-center gap-2.5">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                </svg>
+                Made for beginners
+              </div>
+            </div>
+
+            <Link
+              href="/login"
+              className="inline-flex h-14 w-fit sm:w-auto items-center justify-center gap-2 rounded-full bg-foreground px-8 text-base font-medium text-background hover:bg-foreground/90 transition-colors"
+            >
+              Get Started
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" /></svg>
+            </Link>
+          </div>
+          
+          {/* Mockup */}
+          <div className="mt-20 relative rounded-[2rem] bg-[#0a0a0a] overflow-hidden border border-card-border/10 shadow-2xl aspect-[16/9] max-h-[600px] flex items-end justify-center">
+            {/* Soft glow */}
+            <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[40%] h-[80%] bg-white/5 blur-[100px] rounded-full pointer-events-none" />
+            
+            <div className="w-[85%] h-[90%] bg-background rounded-t-2xl shadow-2xl border border-card-border overflow-hidden flex flex-col transform perspective-1000 rotate-x-2">
+              {/* Fake dashboard header */}
+              <div className="h-14 border-b border-card-border flex items-center px-6 gap-6">
+                <div className="flex items-center gap-1.5 text-accent font-semibold text-sm">
+                  <div className="w-2 h-2 rounded-full bg-accent" />
+                  ClearMarket
+                </div>
+                <div className="h-8 w-64 bg-surface rounded-md border border-card-border" />
+                <div className="flex gap-4 text-xs font-medium text-muted ml-auto">
+                  <span className="text-foreground">Portfolio</span>
+                  <span>Markets</span>
+                  <span>Invest</span>
                 </div>
               </div>
-              <div className="border-t border-card-border pt-4 space-y-3">
-                <p className="text-xs text-muted italic leading-relaxed">
-                  &ldquo;Downgraded due to margin compression and macro headwinds.&rdquo;
-                </p>
-                <div className="flex items-center gap-2">
-                  <svg className="w-4 h-4 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
-                  </svg>
-                  <span className="text-xs text-muted">Simplified</span>
+              
+              {/* Fake dashboard body */}
+              <div className="flex-1 p-8 grid grid-cols-3 gap-8">
+                <div className="col-span-2 space-y-6">
+                  <div>
+                    <h2 className="text-4xl font-bold text-foreground">$459,480.40</h2>
+                    <p className="text-sm font-medium text-positive mt-1">+ $14,645.58 (+3.41%) today</p>
+                  </div>
+                  <div className="h-64 mt-10 relative">
+                    <svg className="w-full h-full text-positive" preserveAspectRatio="none" viewBox="0 0 100 100" fill="none">
+                      <path d="M0,80 L10,75 L20,85 L30,60 L40,70 L50,40 L60,50 L70,20 L80,35 L90,10 L100,25" stroke="currentColor" strokeWidth="1.5" vectorEffect="non-scaling-stroke" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                  </div>
                 </div>
-                <p className="text-sm text-foreground leading-relaxed">
-                  Experts think the company may make less profit, and the overall economy isn&rsquo;t helping.
-                </p>
-                <div className="flex gap-1.5">
-                  <span className="rounded-full bg-negative-bg text-negative px-2.5 py-0.5 text-[11px] font-medium flex items-center gap-1">
-                    <span className="w-1.5 h-1.5 rounded-full bg-negative" />
-                    Negative
-                  </span>
-                  <span className="rounded-full bg-surface border border-card-border px-2.5 py-0.5 text-[11px] text-muted">
-                    Earnings
-                  </span>
-                  <span className="rounded-full bg-surface border border-card-border px-2.5 py-0.5 text-[11px] text-muted">
-                    Economy
-                  </span>
+                <div className="space-y-4">
+                  <div className="h-8 flex justify-between items-center">
+                    <span className="text-sm font-semibold">Updates</span>
+                    <span className="text-xs text-muted">1 of 5 &gt;</span>
+                  </div>
+                  <div className="space-y-3">
+                    <div className="p-4 rounded-xl border border-card-border bg-surface/50 space-y-1">
+                      <div className="flex gap-2 items-center text-xs font-medium text-muted">
+                        <span className="w-5 h-5 rounded-full bg-neutral-sentiment/20 text-neutral-sentiment flex items-center justify-center">B</span>
+                        BTC Price Alert
+                      </div>
+                      <p className="text-sm font-semibold">BTC up 5%</p>
+                    </div>
+                    <div className="p-4 rounded-xl border border-card-border bg-surface/50 space-y-1">
+                      <div className="flex gap-2 items-center text-xs font-medium text-muted">
+                        <span className="w-5 h-5 rounded-full bg-accent/20 text-accent flex items-center justify-center">E</span>
+                        AAPL Earnings
+                      </div>
+                      <p className="text-sm font-semibold">Q3 earnings beat by 3.1%</p>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -131,7 +163,7 @@ export default function Home() {
         <div className="mx-auto max-w-6xl px-6 py-20">
           <div className="max-w-lg space-y-4 mb-12">
             <p className="text-sm font-medium text-accent">How it works</p>
-            <h2 className="text-3xl sm:text-4xl font-bold tracking-tight leading-tight text-foreground">
+            <h2 className="text-3xl sm:text-4xl font-serif tracking-[-0.02em] leading-tight text-foreground">
               Access powerful
               <br />
               investing tools
@@ -166,7 +198,7 @@ export default function Home() {
           <div className="grid sm:grid-cols-2 gap-12 items-start">
             <div className="space-y-4">
               <p className="text-sm font-medium text-accent">Stay informed</p>
-              <h2 className="text-3xl sm:text-4xl font-bold tracking-tight leading-tight text-foreground">
+              <h2 className="text-3xl sm:text-4xl font-serif tracking-[-0.02em] leading-tight text-foreground">
                 Financial news,
                 <br />
                 simplified
@@ -176,7 +208,7 @@ export default function Home() {
                 key takeaways -- so you always understand what&rsquo;s moving the markets.
               </p>
               <Link
-                href="/get-started"
+                href="/dashboard/news"
                 className="inline-flex h-11 items-center justify-center rounded-full bg-accent px-7 text-white text-sm font-medium hover:bg-accent-hover transition-colors mt-2"
               >
                 Read the news &rarr;
@@ -187,7 +219,7 @@ export default function Home() {
               {previewArticles.map((article) => (
                 <Link
                   key={article.id}
-                  href="/get-started"
+                  href="/dashboard/news"
                   className="flex gap-4 rounded-xl border border-card-border bg-card p-4 hover:shadow-sm hover:border-accent-border transition-all group"
                 >
                   <div
@@ -198,14 +230,14 @@ export default function Home() {
                       className="text-[10px] font-bold font-mono"
                       style={{ color: article.imageColor }}
                     >
-                      {article.tickers[0] || categoryLabels[article.category].slice(0, 3).toUpperCase()}
+                      {article.symbols[0] || categoryLabels[article.category].slice(0, 3).toUpperCase()}
                     </span>
                   </div>
                   <div className="flex-1 min-w-0 space-y-1">
                     <div className="flex items-center gap-2 text-[10px] text-muted">
                       <span className="font-medium">{article.source}</span>
                       <span>&middot;</span>
-                      <span>{getTimeAgo(article.timestamp)}</span>
+                      <span>{getTimeAgo(article.publishedAt)}</span>
                     </div>
                     <h3 className="text-sm font-semibold text-foreground leading-snug line-clamp-1 group-hover:text-accent transition-colors">
                       {article.title}
@@ -224,14 +256,14 @@ export default function Home() {
       {/* CTA */}
       <section className="border-t border-card-border bg-surface">
         <div className="mx-auto max-w-6xl px-6 py-20 text-center space-y-5">
-          <h2 className="text-3xl sm:text-4xl font-bold tracking-tight text-foreground">
+          <h2 className="text-3xl sm:text-4xl font-serif tracking-[-0.02em] text-foreground">
             Start understanding the markets
           </h2>
           <p className="text-muted text-sm max-w-md mx-auto">
             Analyze financial opinions in seconds. No account required.
           </p>
           <Link
-            href="/get-started"
+            href="/dashboard"
             className="inline-flex h-11 items-center justify-center rounded-full bg-accent px-8 text-white text-sm font-medium hover:bg-accent-hover transition-colors"
           >
             Get started

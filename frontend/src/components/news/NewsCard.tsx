@@ -24,7 +24,7 @@ export default function NewsCard({ article }: { article: NewsArticle }) {
             className="text-xs font-bold font-mono"
             style={{ color: article.imageColor }}
           >
-            {article.tickers[0] || categoryLabels[article.category].slice(0, 3).toUpperCase()}
+            {article.symbols[0] || categoryLabels[article.category].slice(0, 3).toUpperCase()}
           </span>
         </div>
 
@@ -32,9 +32,7 @@ export default function NewsCard({ article }: { article: NewsArticle }) {
           <div className="flex items-center gap-2 text-[11px] text-muted">
             <span className="font-medium">{article.source}</span>
             <span>&middot;</span>
-            <span>{getTimeAgo(article.timestamp)}</span>
-            <span>&middot;</span>
-            <span>{article.readTime} min</span>
+            <span>{getTimeAgo(article.publishedAt)}</span>
           </div>
 
           <h3 className="text-sm font-semibold text-foreground leading-snug line-clamp-2">
@@ -49,7 +47,7 @@ export default function NewsCard({ article }: { article: NewsArticle }) {
             <span className="rounded-full bg-accent-surface border border-accent-border px-2 py-0.5 text-[10px] font-medium text-accent">
               {categoryLabels[article.category]}
             </span>
-            {article.tickers.slice(0, 3).map((t) => (
+            {article.symbols.slice(0, 3).map((t) => (
               <span
                 key={t}
                 className="rounded-full bg-surface border border-card-border px-2 py-0.5 text-[10px] font-mono text-muted"
@@ -95,10 +93,10 @@ export default function NewsCard({ article }: { article: NewsArticle }) {
       {active === "simplified" && (
         <div className="border-t border-accent-border bg-accent-surface px-5 py-4 space-y-1.5">
           <p className="text-[10px] font-semibold text-accent uppercase tracking-widest">
-            Simplified
+            Sentiment
           </p>
           <p className="text-sm text-foreground leading-relaxed">
-            {article.simplified}
+            {article.sentimentLabel} (score: {article.sentimentScore.toFixed(2)})
           </p>
         </div>
       )}
@@ -106,10 +104,23 @@ export default function NewsCard({ article }: { article: NewsArticle }) {
       {active === "takeaway" && (
         <div className="border-t border-accent-border bg-accent-surface px-5 py-4 space-y-1.5">
           <p className="text-[10px] font-semibold text-accent uppercase tracking-widest">
-            Key Takeaway
+            Full Article
           </p>
           <p className="text-sm text-foreground leading-relaxed">
-            {article.keyTakeaway}
+            Relevance: {(article.relevanceScore * 100).toFixed(0)}%
+            {article.url && (
+              <>
+                {" — "}
+                <a
+                  href={article.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="underline text-accent"
+                >
+                  Read the full article
+                </a>
+              </>
+            )}
           </p>
         </div>
       )}

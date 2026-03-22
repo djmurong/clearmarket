@@ -28,7 +28,7 @@ export default function PortfolioSummary({
           <p className="text-xs font-medium text-muted uppercase tracking-wider">
             Portfolio Value
           </p>
-          <p className="text-3xl font-bold tracking-tight text-foreground">
+          <p className="text-4xl font-serif tracking-[-0.02em] text-foreground">
             ${fmt(totalValue)}
           </p>
           <p

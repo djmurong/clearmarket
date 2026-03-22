@@ -49,39 +49,39 @@ const quickActions = [
 
 export default function DashboardHome() {
   return (
-    <div className="mx-auto max-w-4xl px-6 py-10 space-y-10">
+    <div className="mx-auto max-w-5xl px-8 py-12 space-y-12">
       {/* Welcome */}
-      <div className="space-y-2">
-        <h1 className="text-2xl font-bold tracking-tight text-foreground">
+      <div className="space-y-3">
+        <h1 className="text-4xl font-serif tracking-[-0.02em] text-foreground">
           Welcome back
         </h1>
-        <p className="text-muted text-sm">
+        <p className="text-muted text-[15px]">
           Here&rsquo;s what you can do on ClearMarket.
         </p>
       </div>
 
       {/* Quick action cards */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
         {quickActions.map((action) => (
           <Link
             key={action.title}
             href={action.href}
-            className="group rounded-2xl border border-card-border bg-card p-6 space-y-4 hover:border-accent/30 hover:shadow-sm transition-all"
+            className="group rounded-2xl border border-card-border/60 bg-card p-6 space-y-5 hover:border-card-border hover:shadow-md transition-all flex flex-col"
           >
-            <span className="inline-flex items-center justify-center w-10 h-10 rounded-xl bg-accent/8 text-accent group-hover:bg-accent/12 transition-colors">
+            <span className="inline-flex items-center justify-center w-10 h-10 rounded-xl bg-accent/5 text-accent group-hover:bg-accent/10 transition-colors">
               {action.icon}
             </span>
-            <div className="space-y-1.5">
-              <h3 className="text-sm font-semibold text-foreground">
+            <div className="space-y-2 flex-1">
+              <h3 className="text-[15px] font-medium text-foreground tracking-tight">
                 {action.title}
               </h3>
-              <p className="text-xs text-muted leading-relaxed">
+              <p className="text-[13px] text-muted leading-relaxed">
                 {action.description}
               </p>
             </div>
-            <span className="inline-flex items-center gap-1 text-xs font-medium text-accent group-hover:underline">
+            <span className="inline-flex items-center gap-1.5 text-[13px] font-medium text-foreground group-hover:text-accent transition-colors pt-2">
               {action.cta}
-              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-3.5 h-3.5 transition-transform group-hover:translate-x-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
               </svg>
             </span>
@@ -90,11 +90,11 @@ export default function DashboardHome() {
       </div>
 
       {/* Quick stats */}
-      <div className="rounded-2xl border border-card-border bg-card p-6 space-y-5">
-        <h2 className="text-xs font-medium text-muted uppercase tracking-wider">
+      <div className="rounded-3xl border border-card-border/60 bg-card p-8 space-y-6">
+        <h2 className="text-[13px] font-semibold text-muted uppercase tracking-widest">
           Getting Started
         </h2>
-        <div className="grid gap-4 sm:grid-cols-2">
+        <div className="grid gap-6 sm:grid-cols-2">
           <div className="rounded-xl bg-surface border border-card-border p-5 space-y-2">
             <div className="flex items-center gap-2">
               <span className="w-6 h-6 rounded-full bg-positive/10 text-positive inline-flex items-center justify-center text-xs">

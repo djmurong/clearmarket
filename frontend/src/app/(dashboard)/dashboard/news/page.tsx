@@ -1,10 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
-  mockNews,
   categoryLabels,
+  type NewsArticle,
   type NewsCategory,
+  type NewsResponse,
 } from "@/lib/mockNews";
 import TrendingStory from "@/components/news/TrendingStory";
 import NewsCard from "@/components/news/NewsCard";
@@ -19,33 +20,115 @@ const allCategories: ("all" | NewsCategory)[] = [
   "commodities",
 ];
 
+const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:3000";
+
 export default function NewsPage() {
   const [activeCategory, setActiveCategory] = useState<"all" | NewsCategory>(
     "all"
   );
+  const [articles, setArticles] = useState<NewsArticle[]>([]);
+  const [hottest, setHottest] = useState<NewsArticle[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const trending = mockNews.filter((a) => a.trending);
+  const fetchNews = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await fetch(`${BACKEND_URL}/api/news?mode=both&limit=30`);
+      if (!res.ok) throw new Error(`Server returned ${res.status}`);
+      const data: NewsResponse = await res.json();
+      if (data.error && (!data.latest || data.latest.length === 0)) {
+        setError(data.error);
+      }
+      setArticles(data.latest || []);
+      setHottest(data.hottest?.slice(0, 4) || []);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to load news");
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchNews();
+  }, [fetchNews]);
+
   const filtered =
     activeCategory === "all"
-      ? mockNews.filter((a) => !a.trending)
-      : mockNews.filter(
-          (a) => a.category === activeCategory && !a.trending
+      ? articles
+      : articles.filter(
+          (a) => a.category === activeCategory
         );
 
   return (
-    <div className="mx-auto max-w-4xl px-6 py-10 space-y-8">
+    <div className="mx-auto max-w-5xl px-8 py-12 space-y-10">
       {/* Header */}
-      <div className="space-y-2">
-        <h1 className="text-2xl font-bold tracking-tight text-foreground">
+      <div className="space-y-3">
+        <h1 className="text-4xl font-serif tracking-[-0.02em] text-foreground">
           News
         </h1>
-        <p className="text-muted text-sm">
+        <p className="text-muted text-[15px] max-w-xl">
           Latest financial news and market updates.
         </p>
       </div>
 
+      {/* Loading state */}
+      {loading && (
+        <div className="space-y-4">
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            {[1, 2, 3, 4].map((i) => (
+              <div
+                key={i}
+                className="rounded-2xl border border-card-border bg-card overflow-hidden animate-pulse"
+              >
+                <div className="h-28 bg-surface" />
+                <div className="p-4 space-y-3">
+                  <div className="h-3 bg-surface rounded w-1/3" />
+                  <div className="h-4 bg-surface rounded w-full" />
+                  <div className="h-3 bg-surface rounded w-2/3" />
+                </div>
+              </div>
+            ))}
+          </div>
+          <div className="space-y-2">
+            {[1, 2, 3].map((i) => (
+              <div
+                key={i}
+                className="rounded-xl border border-card-border bg-card p-4 animate-pulse"
+              >
+                <div className="flex gap-4">
+                  <div className="hidden sm:block w-16 h-16 bg-surface rounded-lg" />
+                  <div className="flex-1 space-y-2">
+                    <div className="h-3 bg-surface rounded w-1/4" />
+                    <div className="h-4 bg-surface rounded w-3/4" />
+                    <div className="h-3 bg-surface rounded w-1/2" />
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Error state */}
+      {!loading && error && (
+        <div className="rounded-2xl border border-card-border bg-card p-10 text-center space-y-3">
+          <p className="text-muted text-sm">{error}</p>
+          <button
+            onClick={fetchNews}
+            className="rounded-full bg-foreground text-background px-4 py-1.5 text-xs font-medium hover:opacity-90 transition-opacity"
+          >
+            Retry
+          </button>
+        </div>
+      )}
+
+      {/* Content when loaded */}
+      {!loading && !error && (
+        <>
       {/* Trending section */}
-      {activeCategory === "all" && trending.length > 0 && (
+      {activeCategory === "all" && hottest.length > 0 && (
         <div className="space-y-4">
           <div className="flex items-center gap-2">
             <span className="relative flex h-2 w-2">
@@ -57,7 +140,7 @@ export default function NewsPage() {
             </h2>
           </div>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            {trending.map((article) => (
+            {hottest.map((article) => (
               <TrendingStory key={article.id} article={article} />
             ))}
           </div>
@@ -100,6 +183,8 @@ export default function NewsPage() {
           </div>
         )}
       </div>
+      </>
+      )}
     </div>
   );
 }
