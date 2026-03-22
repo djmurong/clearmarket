@@ -36,9 +36,18 @@ async function getStockPrice(ticker) {
 
 // --- Sentiment (AlphaVantage) ---
 
+const sentimentCache = {};
+const CACHE_TTL_MS = 60 * 60 * 1000; // 1 hour
+
 async function getSentiment(symbols) {
     const sentiments = {};
     for (const symbol of symbols) {
+        const cached = sentimentCache[symbol];
+        if (cached && Date.now() - cached.timestamp < CACHE_TTL_MS) {
+            sentiments[symbol] = cached.data;
+            continue;
+        }
+
         const url = `https://www.alphavantage.co/query?function=NEWS_SENTIMENT&tickers=${symbol}&apikey=${process.env.AV_API}&time_from=20260101T0000`;
         const res = await fetch(url);
         if (!res.ok) throw new Error(`Request failed with status ${res.status}`);
@@ -60,6 +69,7 @@ async function getSentiment(symbols) {
         else                                          label = 'Bullish';
 
         sentiments[symbol] = { sentiment_score: score, sentiment_label: label };
+        sentimentCache[symbol] = { data: sentiments[symbol], timestamp: Date.now() };
     }
     return sentiments;
 }
