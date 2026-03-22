@@ -120,6 +120,8 @@ NEXT_PUBLIC_BACKEND_URL=http://localhost:3000  // or your backend URL
 | GET/POST | `/api/auth/login` | User login | ✅ Ready |
 | POST | `/api/auth/signup` | User signup | ✅ Ready |
 | POST | `/api/auth/logout` | User logout | ✅ Ready |
+| GET | `/api/news?sort=latest\|hottest&limit=30&category=...` | Get finance news | ✅ Ready |
+| POST | `/api/admin/news/sync` | Manually trigger Finnhub news sync | ✅ Ready |
 
 ---
 
@@ -200,6 +202,39 @@ useEffect(() => {
 - [ ] [src/components/paper-trading/PortfolioSummary.tsx](src/components/paper-trading/PortfolioSummary.tsx) - Load portfolio
 - [ ] [src/components/MainNav.tsx](src/components/MainNav.tsx) - Add logout
 - [ ] [src/app/(dashboard)/dashboard/stocks/[ticker]/page.tsx](src/app/(dashboard)/dashboard/stocks/[ticker]/page.tsx) - Load stock details
+
+---
+
+## News Integration (Finnhub)
+
+The news page is powered by Finnhub market news. A scheduled backend sync fetches articles, normalizes them, computes a hotness score, and stores them in Supabase. The frontend reads from `GET /api/news`.
+
+### Query Parameters
+- `sort` — `latest` (default) or `hottest`
+- `limit` — max articles to return (default 30)
+- `category` — optional filter (`general`, `forex`, `crypto`, `merger`)
+
+### Response Shape
+```json
+[
+  {
+    "id": "abc123",
+    "title": "...",
+    "summary": "...",
+    "url": "https://...",
+    "source": "Reuters",
+    "published_at": "2026-03-22T10:00:00Z",
+    "image_url": null,
+    "symbols": ["AAPL", "MSFT"],
+    "category": "general",
+    "hotness_score": 82.5,
+    "finnhub_id": 12345
+  }
+]
+```
+
+### Manual Sync
+Trigger an immediate Finnhub sync with `POST /api/admin/news/sync`. The scheduled sync runs automatically every 5 minutes by default (configurable via `NEWS_SYNC_INTERVAL_MS`).
 
 ---
 

@@ -3,9 +3,21 @@
  * Centralizes all API calls from frontend to backend
  */
 
-const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3001';
+import type { NewsArticle, NewsCategory } from './mockNews';
+
+const BACKEND_URLS = process.env.NEXT_PUBLIC_BACKEND_URL
+  ? [process.env.NEXT_PUBLIC_BACKEND_URL]
+  : ['http://localhost:3001', 'http://localhost:3002', 'http://localhost:3000'];
+const BACKEND_URL = BACKEND_URLS[0];
 
 // ==================== TYPES ====================
+
+export interface NewsQuery {
+  sort?: 'latest' | 'hottest';
+  limit?: number;
+  category?: NewsCategory;
+  symbol?: string;
+}
 
 export interface StockData {
   ticker: string;
@@ -92,6 +104,35 @@ export const api = {
     if (!symbol) throw new Error('Symbol is required');
     const response = await fetch(`${BACKEND_URL}/api/explain/${symbol.toUpperCase()}`);
     return handleResponse(response);
+  },
+
+  // ==================== NEWS APIs ====================
+
+  news: async (query: NewsQuery = {}): Promise<NewsArticle[]> => {
+    const params = new URLSearchParams();
+    if (query.sort) params.set('sort', query.sort);
+    if (query.limit) params.set('limit', String(query.limit));
+    if (query.category) params.set('category', query.category);
+    if (query.symbol) params.set('symbol', query.symbol);
+    const qs = params.toString();
+    let lastError: Error | null = null;
+
+    for (const baseUrl of BACKEND_URLS) {
+      try {
+        const response = await fetch(`${baseUrl}/api/news${qs ? `?${qs}` : ''}`);
+        if (response.ok) return response.json();
+
+        // If this host doesn't expose the backend route, try the next candidate.
+        if (response.status === 404) continue;
+
+        const error = new Error(`API Error: ${response.status}`);
+        lastError = error;
+      } catch (err) {
+        lastError = err instanceof Error ? err : new Error('Unknown news API error');
+      }
+    }
+
+    throw lastError || new Error('News API unavailable');
   },
 
   // ==================== PORTFOLIO APIs ====================

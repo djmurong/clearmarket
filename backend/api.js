@@ -1,7 +1,12 @@
 'use strict';
 
 const Groq = require('groq-sdk');
-const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
+
+let _groq;
+function getGroq() {
+    if (!_groq) _groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
+    return _groq;
+}
 
 // --- Trending ---
 
@@ -77,7 +82,7 @@ async function getSentiment(symbols) {
 // --- AI Explanation (Groq) ---
 
 async function explainStock(stockData) {
-    const chat = await groq.chat.completions.create({
+    const chat = await getGroq().chat.completions.create({
         model: 'llama-3.3-70b-versatile',
         messages: [{
             role: 'user',
@@ -119,4 +124,13 @@ async function logOut() {
     if (error) throw new Error(error.message);
 }
 
-module.exports = { getTrending, getStockPrice, getSentiment, explainStock, signUp, logIn, logOut };
+// --- Finnhub News (re-exported from finnhub.js) ---
+
+const { fetchFinnhubMarketNews, normalizeFinnhubArticle, computeHotnessScore, CATEGORY_MAP } = require('./finnhub');
+
+module.exports = {
+    getTrending, getStockPrice, getSentiment, explainStock,
+    signUp, logIn, logOut,
+    fetchFinnhubMarketNews, normalizeFinnhubArticle, computeHotnessScore,
+    CATEGORY_MAP,
+};

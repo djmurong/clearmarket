@@ -5,7 +5,7 @@ const { getTrending, getStockPrice, getSentiment, explainStock, signUp, logIn, l
 const supabase = require('./db');
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = parseInt(process.env.PORT, 10) || 3001;
 
 app.use(cors());
 app.use(express.json());
@@ -292,16 +292,68 @@ app.delete('/api/watchlist/:id', async (req, res) => {
     }
 });
 
-// GET /api/news
+// GET /api/news?sort=latest|hottest&limit=30&category=general
 app.get('/api/news', async (req, res) => {
     try {
-        const { data, error } = await supabase.from('news').select('*').order('publish_date', { ascending: false });
+        const sort = req.query.sort === 'hottest' ? 'hottest' : 'latest';
+        const limit = Math.min(parseInt(req.query.limit, 10) || 30, 100);
+        const category = req.query.category ? String(req.query.category) : null;
+        const symbol = req.query.symbol ? String(req.query.symbol).toUpperCase() : null;
+
+        const { data, error } = await supabase
+            .from('news')
+            .select('*')
+            .limit(300);
+
         if (error) return res.status(500).json({ error: error.message });
-        res.json(data);
+
+        const normalized = (data || []).map((row) => {
+            const publishedAt = row.published_at || row.publish_date || row.created_at || new Date(0).toISOString();
+            const symbols = Array.isArray(row.symbols)
+                ? row.symbols
+                : typeof row.symbols === 'string' && row.symbols.length > 0
+                    ? row.symbols.split(',').map((s) => s.trim().toUpperCase()).filter(Boolean)
+                    : [];
+
+            return {
+                id: String(row.id ?? row.finnhub_id ?? `${row.url}-${publishedAt}`),
+                finnhub_id: row.finnhub_id ?? 0,
+                title: row.title || '',
+                summary: row.summary || '',
+                url: row.url || '',
+                source: row.source || 'Unknown',
+                published_at: publishedAt,
+                image_url: row.image_url || row.image || null,
+                symbols,
+                category: row.category || 'general',
+                hotness_score: Number(row.hotness_score ?? 0),
+            };
+        });
+
+        const filtered = normalized.filter((article) => {
+            if (category && article.category !== category) return false;
+            if (symbol && !article.symbols.includes(symbol)) return false;
+            return true;
+        });
+
+        const sorted = filtered.sort((a, b) => {
+            if (sort === 'hottest') {
+                if (b.hotness_score !== a.hotness_score) return b.hotness_score - a.hotness_score;
+            }
+            return new Date(b.published_at).getTime() - new Date(a.published_at).getTime();
+        });
+
+        res.json(sorted.slice(0, limit));
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
 });
+
+// POST /api/admin/news/sync — disabled (news sync module not available)
+app.post('/api/admin/news/sync', (_req, res) => {
+    res.status(501).json({ error: 'News sync not available' });
+});
+
 
 // GET /api/user_news/:userId
 app.get('/api/user_news/:userId', async (req, res) => {
@@ -336,7 +388,7 @@ app.post('/api/user_news/mark-seen', async (req, res) => {
 });
 
 // GET /api/leaderboard
-app.get('/api/leaderboard', async (req, res) => {
+app.get('/api/leaderboard', async (_req, res) => {
     try {
         const { data: profiles, error: profileErr } = await supabase.from('profiles').select('id, username');
         if (profileErr) return res.status(500).json({ error: profileErr.message });
@@ -458,11 +510,6 @@ app.post('/api/portfolio/copy', async (req, res) => {
 
 const server = app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
-});
-
-server.on('error', (err) => {
-    console.error('Server error:', err);
-    process.exit(1);
 });
 
 // Keep the process alive

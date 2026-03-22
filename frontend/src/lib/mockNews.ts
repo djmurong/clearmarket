@@ -1,52 +1,40 @@
 export interface NewsArticle {
   id: string;
+  finnhub_id: number;
   title: string;
   summary: string;
   url: string;
   source: string;
-  publishedAt: string;
-  imageUrl: string | null;
-  sentimentLabel: string;
-  sentimentScore: number;
+  published_at: string;
+  image_url: string | null;
   symbols: string[];
-  relevanceScore: number;
   category: NewsCategory;
-  imageColor: string;
-}
-
-export interface NewsMeta {
-  provider: string;
-  fetchedAt: string;
-  query: { tickers?: string; topics?: string; limit: number };
-  total: number;
-}
-
-export interface NewsResponse {
-  latest?: NewsArticle[];
-  hottest?: NewsArticle[];
-  meta: NewsMeta;
-  error?: string;
+  hotness_score: number;
 }
 
 export type NewsCategory =
-  | "markets"
-  | "earnings"
-  | "economy"
+  | "general"
+  | "forex"
   | "crypto"
-  | "tech"
-  | "commodities";
+  | "merger";
 
 export const categoryLabels: Record<NewsCategory, string> = {
-  markets: "Markets",
-  earnings: "Earnings",
-  economy: "Economy",
+  general: "General",
+  forex: "Forex",
   crypto: "Crypto",
-  tech: "Tech",
-  commodities: "Commodities",
+  merger: "M&A",
 };
 
-// Kept for compatibility with existing imports.
-export const mockNews: NewsArticle[] = [];
+const CATEGORY_COLORS: Record<NewsCategory, string> = {
+  general: "#3b82f6",
+  forex: "#10b981",
+  crypto: "#f59e0b",
+  merger: "#8b5cf6",
+};
+
+export function getCategoryColor(category: NewsCategory): string {
+  return CATEGORY_COLORS[category] || "#6b7280";
+}
 
 export function getTimeAgo(timestamp: string): string {
   const diff = Date.now() - new Date(timestamp).getTime();

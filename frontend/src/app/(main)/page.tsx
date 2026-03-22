@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { categoryLabels, getTimeAgo, NewsArticle } from "@/lib/mockNews";
+import { categoryLabels, getCategoryColor, getTimeAgo, NewsArticle } from "@/lib/mockNews";
 
 const previewArticles: NewsArticle[] = [];
 
@@ -224,11 +224,11 @@ export default function Home() {
                 >
                   <div
                     className="hidden sm:flex flex-shrink-0 w-12 h-12 rounded-lg items-center justify-center"
-                    style={{ background: `${article.imageColor}15` }}
+                    style={{ background: `${getCategoryColor(article.category)}15` }}
                   >
                     <span
                       className="text-[10px] font-bold font-mono"
-                      style={{ color: article.imageColor }}
+                      style={{ color: getCategoryColor(article.category) }}
                     >
                       {article.symbols[0] || categoryLabels[article.category].slice(0, 3).toUpperCase()}
                     </span>
@@ -237,7 +237,7 @@ export default function Home() {
                     <div className="flex items-center gap-2 text-[10px] text-muted">
                       <span className="font-medium">{article.source}</span>
                       <span>&middot;</span>
-                      <span>{getTimeAgo(article.publishedAt)}</span>
+                      <span>{getTimeAgo(article.published_at)}</span>
                     </div>
                     <h3 className="text-sm font-semibold text-foreground leading-snug line-clamp-1 group-hover:text-accent transition-colors">
                       {article.title}

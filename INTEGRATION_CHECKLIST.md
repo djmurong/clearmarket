@@ -37,10 +37,14 @@ Track your progress connecting frontend CTAs to backend APIs.
 - [ ] Display trending stocks list
 - [ ] Link to stock detail pages
 
-## News Page (Priority 2)
-- [ ] Implement backend `/api/news` endpoint (if missing)
-- [ ] Connect "Refresh" button to API
-- [ ] Filter news by category (if available)
+## News Page — Finnhub Integration (Priority 2)
+- [x] Implement backend `/api/news` endpoint with Finnhub sync
+- [x] Add `FINNHUB_API_KEY` to `.env` and `.env.example`
+- [x] Scheduled sync job (runs every 5 min by default)
+- [x] Manual sync via `POST /api/admin/news/sync`
+- [x] Connect "Refresh" button to API
+- [x] Filter news by category
+- [x] Sort by `latest` or `hottest`
 
 ## Analyze Page (Priority 3)
 - [ ] Verify `/api/analyze` Next.js route is complete
