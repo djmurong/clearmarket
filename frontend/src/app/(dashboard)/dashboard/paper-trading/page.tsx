@@ -6,12 +6,14 @@ import api from "@/lib/apiClient";
 import PortfolioSummary from "@/components/paper-trading/PortfolioSummary";
 import PositionsList from "@/components/paper-trading/PositionsList";
 import TradeForm from "@/components/paper-trading/TradeForm";
+import LeaderboardPanel from "@/components/paper-trading/LeaderboardPanel";
 
-type Tab = "portfolio" | "trade";
+type Tab = "portfolio" | "trade" | "leaderboard";
 
 const tabs: { id: Tab; label: string }[] = [
   { id: "portfolio", label: "Portfolio" },
   { id: "trade", label: "Trade" },
+  { id: "leaderboard", label: "Leaderboard" },
 ];
 
 export default function PaperTradingPage() {
@@ -235,6 +237,15 @@ export default function PaperTradingPage() {
             onTrade={handleTrade}
             error={tradeError}
             success={tradeSuccess}
+          />
+        </div>
+      )}
+
+      {activeTab === "leaderboard" && userId && (
+        <div className="max-w-2xl">
+          <LeaderboardPanel
+            userId={userId}
+            onCopyComplete={() => fetchPortfolio(userId)}
           />
         </div>
       )}
