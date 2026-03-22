@@ -25,7 +25,7 @@ app.get('/api/trending', async (req, res) => {
         const data = await getTrending();
         const top5 = data.symbols
             .filter(s => !s.symbol.includes('.'))
-            .slice(0, 5);
+            .slice(0, 15);
         res.json({ symbols: top5 });
     } catch (err) {
         res.status(500).json({ error: err.message });
