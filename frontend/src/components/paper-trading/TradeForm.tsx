@@ -1,15 +1,19 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { TradeAction } from "@/lib/types";
-import { getPrice, getAllTickers } from "@/lib/paperTradingStore";
+import api from "@/lib/apiClient";
 
-function fmt(n: number): string {
+function fmt(n: number | undefined): string {
+  if (!n || isNaN(n)) return "0.00";
   return n.toLocaleString("en-US", {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   });
 }
+
+// List of common tickers to trade
+const DEFAULT_TICKERS = ["AAPL", "MSFT", "GOOGL", "AMZN", "TSLA", "META", "NVDA", "JPM"];
 
 interface TradeFormProps {
   cashBalance: number;
@@ -26,19 +30,43 @@ export default function TradeForm({
   error,
   success,
 }: TradeFormProps) {
-  const [ticker, setTicker] = useState(getAllTickers()[0]);
+  const [ticker, setTicker] = useState(DEFAULT_TICKERS[0]);
   const [action, setAction] = useState<TradeAction>("buy");
   const [sharesStr, setSharesStr] = useState("");
+  const [price, setPrice] = useState<number | null>(null);
+  const [loadingPrice, setLoadingPrice] = useState(false);
+  const [priceError, setPriceError] = useState<string | null>(null);
+
+  // Fetch price when ticker changes
+  useEffect(() => {
+    const fetchPrice = async () => {
+      try {
+        setLoadingPrice(true);
+        setPriceError(null);
+        const stockData = await api.price(ticker);
+        setPrice(stockData.price);
+      } catch (err) {
+        setPriceError(err instanceof Error ? err.message : "Failed to load price");
+        setPrice(null);
+      } finally {
+        setLoadingPrice(false);
+      }
+    };
+
+    fetchPrice();
+  }, [ticker]);
 
   const shares = parseInt(sharesStr, 10);
-  const price = getPrice(ticker);
   const estimatedTotal =
     price && shares > 0 ? Math.round(price * shares * 100) / 100 : 0;
   const currentlyOwned = ownedShares(ticker);
+  const hasInsufficientFunds = action === "buy" && estimatedTotal > cashBalance;
+  const hasInsufficientShares = action === "sell" && shares > currentlyOwned;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!shares || shares <= 0) return;
+    if (!shares || shares <= 0 || !price) return;
+    if (hasInsufficientFunds || hasInsufficientShares) return;
     onTrade(ticker, action, shares);
     setSharesStr("");
   };
@@ -82,16 +110,21 @@ export default function TradeForm({
             onChange={(e) => setTicker(e.target.value)}
             className="w-full rounded-xl border border-card-border bg-background px-4 py-2.5 text-sm font-mono text-foreground focus:outline-none focus:border-accent focus:ring-2 focus:ring-accent/10 transition-colors"
           >
-            {getAllTickers().map((t) => {
-              const p = getPrice(t);
-              return (
-                <option key={t} value={t}>
-                  {t} &mdash; ${p ? fmt(p) : "N/A"}
-                </option>
-              );
-            })}
+            {DEFAULT_TICKERS.map((t) => (
+              <option key={t} value={t}>
+                {t}
+              </option>
+            ))}
           </select>
         </div>
+
+        {/* Current Price */}
+        {loadingPrice && (
+          <div className="text-xs text-muted animate-pulse">Loading price...</div>
+        )}
+        {priceError && (
+          <div className="text-xs text-negative">{priceError}</div>
+        )}
 
         {/* Shares */}
         <div>
@@ -109,7 +142,8 @@ export default function TradeForm({
             value={sharesStr}
             onChange={(e) => setSharesStr(e.target.value)}
             placeholder="0"
-            className="w-full rounded-xl border border-card-border bg-background px-4 py-2.5 text-sm text-foreground placeholder:text-muted-dim focus:outline-none focus:border-accent focus:ring-2 focus:ring-accent/10 transition-colors"
+            disabled={!price || loadingPrice}
+            className="w-full rounded-xl border border-card-border bg-background px-4 py-2.5 text-sm text-foreground placeholder:text-muted-dim focus:outline-none focus:border-accent focus:ring-2 focus:ring-accent/10 transition-colors disabled:opacity-50"
             required
           />
         </div>
@@ -131,13 +165,17 @@ export default function TradeForm({
           {action === "buy" && (
             <div className="flex justify-between">
               <span className="text-muted">Buying power</span>
-              <span className="text-foreground">${fmt(cashBalance)}</span>
+              <span className={`font-medium ${hasInsufficientFunds ? "text-negative" : "text-foreground"}`}>
+                ${fmt(cashBalance)}
+              </span>
             </div>
           )}
           {action === "sell" && (
             <div className="flex justify-between">
               <span className="text-muted">Shares owned</span>
-              <span className="text-foreground">{currentlyOwned}</span>
+              <span className={`font-medium ${hasInsufficientShares ? "text-negative" : "text-foreground"}`}>
+                {currentlyOwned}
+              </span>
             </div>
           )}
         </div>
@@ -155,14 +193,14 @@ export default function TradeForm({
 
         <button
           type="submit"
-          disabled={!shares || shares <= 0}
-          className={`w-full h-11 rounded-full text-sm font-medium text-white transition-colors disabled:opacity-40 disabled:cursor-not-allowed ${
+          disabled={!price || loadingPrice || shares <= 0 || hasInsufficientFunds || hasInsufficientShares}
+          className={`w-full py-3 rounded-xl font-medium text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
             action === "buy"
-              ? "bg-positive hover:bg-positive/90"
-              : "bg-negative hover:bg-negative/90"
+              ? "bg-positive text-white hover:bg-positive/90"
+              : "bg-negative text-white hover:bg-negative/90"
           }`}
         >
-          {action === "buy" ? "Buy" : "Sell"} {ticker}
+          {loadingPrice ? "Loading price..." : `${action === "buy" ? "Buy" : "Sell"} ${ticker}`}
         </button>
       </form>
     </div>

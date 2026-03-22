@@ -2,78 +2,146 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { Portfolio, TradeAction } from "@/lib/types";
-import {
-  loadPortfolio,
-  resetPortfolio,
-  executeTrade,
-} from "@/lib/paperTradingStore";
+import api from "@/lib/apiClient";
 import PortfolioSummary from "@/components/paper-trading/PortfolioSummary";
 import PositionsList from "@/components/paper-trading/PositionsList";
 import TradeForm from "@/components/paper-trading/TradeForm";
-import TradeHistory from "@/components/paper-trading/TradeHistory";
 
-type Tab = "portfolio" | "trade" | "history";
+type Tab = "portfolio" | "trade";
 
 const tabs: { id: Tab; label: string }[] = [
   { id: "portfolio", label: "Portfolio" },
   { id: "trade", label: "Trade" },
-  { id: "history", label: "History" },
 ];
 
 export default function PaperTradingPage() {
-  const [portfolio, setPortfolio] = useState<Portfolio | null>(null);
+  const [portfolioItems, setPortfolioItems] = useState<any[]>([]);
+  const [positions, setPositions] = useState<any[]>([]);
   const [activeTab, setActiveTab] = useState<Tab>("portfolio");
   const [tradeError, setTradeError] = useState<string | null>(null);
   const [tradeSuccess, setTradeSuccess] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [userId, setUserId] = useState<string | null>(null);
 
+  // Load userId and portfolio on mount
   useEffect(() => {
-    setPortfolio(loadPortfolio());
+    const storedUserId = localStorage.getItem("userId");
+    if (!storedUserId) {
+      setTradeError("User not logged in. Please log in first.");
+      setLoading(false);
+      return;
+    }
+    
+    setUserId(storedUserId);
+    fetchPortfolio(storedUserId);
   }, []);
 
-  const handleReset = useCallback(() => {
-    if (window.confirm("Reset your portfolio? This will erase all positions and trade history.")) {
-      setPortfolio(resetPortfolio());
-      setTradeError(null);
-      setTradeSuccess(null);
+  // Transform portfolio data when it changes
+  useEffect(() => {
+    const transformPositions = async () => {
+      if (!portfolioItems.length) {
+        setPositions([]);
+        return;
+      }
+      
+      const transformed = await Promise.all(
+        portfolioItems.map(async (item: any) => {
+          try {
+            const stockData = await api.price(item.ticker);
+            return {
+              ticker: item.ticker,
+              shares: item.shares || 0,
+              avgCost: item.avg_cost || 0,
+              currentPrice: stockData.price || 0,
+            };
+          } catch (err) {
+            return {
+              ticker: item.ticker,
+              shares: item.shares || 0,
+              avgCost: item.avg_cost || 0,
+              currentPrice: 0,
+            };
+          }
+        })
+      );
+      setPositions(transformed);
+    };
+
+    transformPositions();
+  }, [portfolioItems]);
+
+  const fetchPortfolio = async (id: string) => {
+    try {
+      setLoading(true);
+      const data = await api.portfolio(id);
+      setPortfolioItems(data || []);
+    } catch (err) {
+      setTradeError(err instanceof Error ? err.message : "Failed to load portfolio");
+    } finally {
+      setLoading(false);
     }
-  }, []);
+  };
 
   const handleTrade = useCallback(
-    (ticker: string, action: TradeAction, shares: number) => {
-      if (!portfolio) return;
+    async (ticker: string, action: TradeAction, shares: number) => {
+      if (!userId) {
+        setTradeError("User ID not found");
+        return;
+      }
+
       setTradeError(null);
       setTradeSuccess(null);
 
-      const result = executeTrade(portfolio, ticker, action, shares);
+      try {
+        if (action === "buy") {
+          await api.buyStock({
+            user_id: userId,
+            ticker: ticker.toUpperCase(),
+            company_name: ticker,
+            shares,
+          });
+        } else {
+          await api.sellStock({
+            user_id: userId,
+            ticker: ticker.toUpperCase(),
+            company_name: ticker,
+            shares,
+          });
+        }
 
-      if (result.error) {
-        setTradeError(result.error);
-      } else {
         setTradeSuccess(
           `${action === "buy" ? "Bought" : "Sold"} ${shares} share${
             shares !== 1 ? "s" : ""
           } of ${ticker}.`
         );
         setTimeout(() => setTradeSuccess(null), 4000);
-      }
 
-      setPortfolio(result.portfolio);
+        // Refresh portfolio
+        await fetchPortfolio(userId);
+      } catch (err) {
+        const message = err instanceof Error ? err.message : "Trade failed";
+        setTradeError(message);
+      }
     },
-    [portfolio]
+    [userId]
   );
 
   const getOwnedShares = useCallback(
     (ticker: string) => {
-      if (!portfolio) return 0;
-      const pos = portfolio.positions.find(
-        (p) => p.ticker === ticker.toUpperCase()
+      const position = portfolioItems.find(
+        (p) => p.ticker?.toUpperCase() === ticker.toUpperCase()
       );
-      return pos?.shares ?? 0;
+      return position?.shares ?? 0;
     },
-    [portfolio]
+    [portfolioItems]
   );
 
-  if (!portfolio) {
+  const getTotalValue = useCallback(
+    () => portfolioItems.reduce((sum, p) => sum + (p.account_value || 0), 0),
+    [portfolioItems]
+  );
+
+  if (loading) {
     return (
       <div className="mx-auto max-w-4xl px-6 py-10">
         <div className="animate-pulse space-y-6">
@@ -91,7 +159,7 @@ export default function PaperTradingPage() {
           Paper Trading
         </h1>
         <p className="text-muted text-[15px] leading-relaxed max-w-xl">
-          Practice trading with $100,000 in simulated funds. No real money involved.
+          Trade stocks using real-time prices from your backend API.
         </p>
       </div>
 
@@ -118,12 +186,43 @@ export default function PaperTradingPage() {
 
       {activeTab === "portfolio" && (
         <div className="space-y-6">
-          <PortfolioSummary portfolio={portfolio} onReset={handleReset} />
+          <div className="rounded-2xl border border-card-border bg-card p-6 space-y-4">
+            <div className="flex justify-between items-start">
+              <div className="space-y-1">
+                <p className="text-xs font-medium text-muted uppercase tracking-widest">
+                  Portfolio Value
+                </p>
+                <p className="text-4xl font-serif tracking-[-0.02em] text-foreground">
+                  ${getTotalValue().toLocaleString("en-US", {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
+                  })}
+                </p>
+              </div>
+              <button
+                onClick={() => {
+                  if (confirm("Reset portfolio?")) {
+                    setPortfolioItems([]);
+                  }
+                }}
+                className="text-xs font-medium text-muted hover:text-negative px-3 py-2 rounded-lg hover:bg-surface transition-colors"
+              >
+                Reset
+              </button>
+            </div>
+          </div>
+          
           <div className="space-y-3">
             <h2 className="text-xs font-medium text-muted uppercase tracking-wider">
-              Positions
+              Positions ({positions.length})
             </h2>
-            <PositionsList positions={portfolio.positions} />
+            {positions.length === 0 ? (
+              <div className="rounded-xl border border-card-border/60 bg-card p-6 text-center text-muted text-sm">
+                No positions yet. Start trading to build your portfolio.
+              </div>
+            ) : (
+              <PositionsList positions={positions} />
+            )}
           </div>
         </div>
       )}
@@ -131,26 +230,12 @@ export default function PaperTradingPage() {
       {activeTab === "trade" && (
         <div className="max-w-md">
           <TradeForm
-            cashBalance={portfolio.cashBalance}
+            cashBalance={getTotalValue()}
             ownedShares={getOwnedShares}
             onTrade={handleTrade}
             error={tradeError}
             success={tradeSuccess}
           />
-        </div>
-      )}
-
-      {activeTab === "history" && (
-        <div className="space-y-3">
-          <div className="flex items-center justify-between">
-            <h2 className="text-xs font-medium text-muted uppercase tracking-wider">
-              Trade History
-            </h2>
-            <span className="text-xs text-muted-dim">
-              {portfolio.trades.length} trade{portfolio.trades.length !== 1 ? "s" : ""}
-            </span>
-          </div>
-          <TradeHistory trades={portfolio.trades} />
         </div>
       )}
     </div>

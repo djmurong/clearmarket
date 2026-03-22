@@ -2,7 +2,8 @@
 
 import { Position } from "@/lib/types";
 
-function fmt(n: number): string {
+function fmt(n: number | undefined): string {
+  if (!n || isNaN(n)) return "0.00";
   return n.toLocaleString("en-US", {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,

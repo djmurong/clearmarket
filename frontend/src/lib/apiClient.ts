@@ -3,7 +3,7 @@
  * Centralizes all API calls from frontend to backend
  */
 
-const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3000';
+const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3001';
 
 // ==================== TYPES ====================
 
@@ -58,7 +58,6 @@ export interface AuthResponse {
 async function handleResponse(response: Response) {
   if (!response.ok) {
     const error = new Error(`API Error: ${response.status}`);
-    error.statusCode = response.status;
     throw error;
   }
   return response.json();
