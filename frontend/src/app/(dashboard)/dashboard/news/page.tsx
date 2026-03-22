@@ -62,13 +62,13 @@ export default function NewsPage() {
         );
 
   return (
-    <div className="mx-auto max-w-4xl px-6 py-10 space-y-8">
+    <div className="mx-auto max-w-5xl px-8 py-12 space-y-10">
       {/* Header */}
-      <div className="space-y-2">
-        <h1 className="text-2xl font-bold tracking-tight text-foreground">
+      <div className="space-y-3">
+        <h1 className="text-4xl font-serif tracking-[-0.02em] text-foreground">
           News
         </h1>
-        <p className="text-muted text-sm">
+        <p className="text-muted text-[15px] max-w-xl">
           Latest financial news and market updates.
         </p>
       </div>

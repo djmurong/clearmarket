@@ -99,7 +99,25 @@ export const mockResults: InterpretationResult[] = [
   },
 ];
 
-export const availableTickers = ["AAPL", "TSLA", "MSFT"];
+export interface StockMeta {
+  ticker: string;
+  name: string;
+}
+
+export const stockDirectory: StockMeta[] = [
+  { ticker: "AAPL", name: "Apple Inc." },
+  { ticker: "TSLA", name: "Tesla Inc." },
+  { ticker: "MSFT", name: "Microsoft Corp." },
+  { ticker: "GOOGL", name: "Alphabet Inc." },
+  { ticker: "AMZN", name: "Amazon.com Inc." },
+  { ticker: "NVDA", name: "NVIDIA Corp." },
+  { ticker: "META", name: "Meta Platforms Inc." },
+  { ticker: "JPM", name: "JPMorgan Chase & Co." },
+  { ticker: "V", name: "Visa Inc." },
+  { ticker: "DIS", name: "The Walt Disney Co." },
+];
+
+export const availableTickers = stockDirectory.map((s) => s.ticker);
 
 export function getMockResultsForTicker(ticker: string): InterpretationResult[] {
   return mockResults.filter(

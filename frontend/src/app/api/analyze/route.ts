@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { InterpretationResult, SourceType } from "@/lib/types";
 
 interface AnalyzeBody {
-  text: string;
+  text?: string;
+  url?: string;
   ticker?: string;
   source: SourceType;
 }
@@ -52,20 +53,115 @@ function detectReasons(text: string): InterpretationResult["reasonTags"] {
   return tags.length > 0 ? tags : ["earnings"];
 }
 
+function extractTextFromHtml(html: string): string {
+  let text = html;
+
+  text = text.replace(/<script[\s\S]*?<\/script>/gi, " ");
+  text = text.replace(/<style[\s\S]*?<\/style>/gi, " ");
+  text = text.replace(/<nav[\s\S]*?<\/nav>/gi, " ");
+  text = text.replace(/<footer[\s\S]*?<\/footer>/gi, " ");
+  text = text.replace(/<header[\s\S]*?<\/header>/gi, " ");
+
+  const articleMatch =
+    text.match(/<article[\s\S]*?<\/article>/i) ||
+    text.match(/<main[\s\S]*?<\/main>/i) ||
+    text.match(/<div[^>]*class="[^"]*(?:article|content|story|post)[^"]*"[\s\S]*?<\/div>/i);
+
+  if (articleMatch) {
+    text = articleMatch[0];
+  }
+
+  text = text.replace(/<[^>]+>/g, " ");
+
+  text = text.replace(/&nbsp;/g, " ");
+  text = text.replace(/&amp;/g, "&");
+  text = text.replace(/&lt;/g, "<");
+  text = text.replace(/&gt;/g, ">");
+  text = text.replace(/&quot;/g, '"');
+  text = text.replace(/&#39;/g, "'");
+  text = text.replace(/&[a-z]+;/gi, " ");
+
+  text = text.replace(/\s+/g, " ").trim();
+
+  const MAX_LENGTH = 5000;
+  if (text.length > MAX_LENGTH) {
+    text = text.slice(0, MAX_LENGTH);
+  }
+
+  return text;
+}
+
+async function fetchUrlContent(url: string): Promise<string> {
+  const res = await fetch(url, {
+    headers: {
+      "User-Agent":
+        "Mozilla/5.0 (compatible; ClearMarketBot/1.0; +https://clearmarket.app)",
+      Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+    },
+    signal: AbortSignal.timeout(10_000),
+  });
+
+  if (!res.ok) {
+    throw new Error(`Failed to fetch URL (${res.status})`);
+  }
+
+  const contentType = res.headers.get("content-type") || "";
+  if (!contentType.includes("text/html") && !contentType.includes("text/plain")) {
+    throw new Error("URL does not point to a readable article");
+  }
+
+  const html = await res.text();
+  return extractTextFromHtml(html);
+}
+
 export async function POST(request: NextRequest) {
   const body: AnalyzeBody = await request.json();
 
-  if (!body.text || body.text.trim().length === 0) {
+  let articleText: string;
+
+  if (body.url && body.url.trim().length > 0) {
+    try {
+      new URL(body.url);
+    } catch {
+      return NextResponse.json(
+        { error: "Invalid URL provided" },
+        { status: 400 },
+      );
+    }
+
+    try {
+      articleText = await fetchUrlContent(body.url.trim());
+    } catch (err) {
+      return NextResponse.json(
+        {
+          error:
+            err instanceof Error
+              ? err.message
+              : "Could not read the article at that URL",
+        },
+        { status: 422 },
+      );
+    }
+
+    if (articleText.length < 20) {
+      return NextResponse.json(
+        { error: "Could not extract enough text from that URL. Try pasting the text directly." },
+        { status: 422 },
+      );
+    }
+  } else if (body.text && body.text.trim().length > 0) {
+    articleText = body.text.trim();
+  } else {
     return NextResponse.json(
-      { error: "Text is required" },
-      { status: 400 }
+      { error: "Either text or a URL is required" },
+      { status: 400 },
     );
   }
 
   await new Promise((resolve) => setTimeout(resolve, 800));
 
-  const sentiment = detectSentiment(body.text);
-  const reasonTags = detectReasons(body.text);
+  const sentiment = detectSentiment(articleText);
+  const reasonTags = detectReasons(articleText);
 
   const sentimentPhrases = {
     positive: {
@@ -91,7 +187,7 @@ export async function POST(request: NextRequest) {
     id: `analysis-${Date.now()}`,
     ticker: body.ticker || "N/A",
     source: body.source,
-    originalText: body.text,
+    originalText: articleText.length > 500 ? articleText.slice(0, 500) + "…" : articleText,
     simpleSummary: phrases.simple,
     eli12Summary: phrases.eli12,
     sentiment,

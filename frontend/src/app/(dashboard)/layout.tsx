@@ -67,13 +67,14 @@ export default function DashboardLayout({
   return (
     <div className="flex min-h-screen">
       {/* Sidebar */}
-      <aside className="hidden md:flex md:w-60 flex-col border-r border-card-border bg-surface">
-        <div className="px-5 h-16 flex items-center border-b border-card-border">
-          <Link href="/" className="flex items-center gap-2 text-foreground">
-            <span className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-foreground text-background text-xs font-bold">
-              C
-            </span>
-            <span className="text-[15px] font-semibold tracking-tight">
+      <aside className="hidden md:flex md:w-64 flex-col border-r border-card-border/40 bg-background">
+        <div className="px-6 h-20 flex items-center border-b border-card-border/40">
+          <Link href="/" className="flex items-center gap-2 text-foreground group">
+            <div className="relative flex flex-col gap-0.5">
+              <div className="w-2.5 h-2.5 rounded-full bg-accent" />
+              <div className="w-2.5 h-2.5 rounded-full bg-accent/60" />
+            </div>
+            <span className="text-lg font-medium tracking-tight">
               ClearMarket
             </span>
           </Link>
@@ -117,14 +118,15 @@ export default function DashboardLayout({
       {/* Main content area */}
       <div className="flex-1 flex flex-col min-w-0">
         {/* Top bar */}
-        <header className="sticky top-0 z-50 bg-background border-b border-card-border">
-          <div className="flex items-center justify-between px-6 h-16">
+        <header className="sticky top-0 z-50 bg-background border-b border-card-border/40">
+          <div className="flex items-center justify-between px-6 h-20">
             {/* Mobile logo */}
             <div className="md:hidden">
               <Link href="/" className="flex items-center gap-2 text-foreground">
-                <span className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-foreground text-background text-xs font-bold">
-                  C
-                </span>
+                <div className="relative flex flex-col gap-0.5">
+                  <div className="w-2.5 h-2.5 rounded-full bg-accent" />
+                  <div className="w-2.5 h-2.5 rounded-full bg-accent/60" />
+                </div>
               </Link>
             </div>
 

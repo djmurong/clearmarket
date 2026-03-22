@@ -8,8 +8,8 @@ export default function GetStartedPage() {
         <div className="mx-auto max-w-6xl px-6 py-20 sm:py-28 grid sm:grid-cols-2 gap-12 items-center">
           {/* Left: headline + CTAs */}
           <div className="space-y-6">
-            <h1 className="text-4xl sm:text-[52px] font-bold tracking-tight leading-[1.1] text-foreground">
-              Start trading
+            <h1 className="text-4xl sm:text-[52px] font-serif tracking-[-0.02em] leading-[1.1] text-foreground">
+              Start investing
               <br />
               smarter today
             </h1>
@@ -175,7 +175,7 @@ export default function GetStartedPage() {
       {/* Bottom CTA */}
       <section className="border-t border-card-border bg-background">
         <div className="mx-auto max-w-6xl px-6 py-20 text-center space-y-5">
-          <h2 className="text-3xl sm:text-4xl font-bold tracking-tight text-foreground">
+          <h2 className="text-3xl sm:text-4xl font-serif tracking-[-0.02em] text-foreground">
             Ready to get started?
           </h2>
           <p className="text-muted text-sm max-w-md mx-auto">

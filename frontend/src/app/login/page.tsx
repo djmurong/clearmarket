@@ -51,7 +51,7 @@ export default function LoginPage() {
 
           {/* Tagline */}
           <div className="space-y-6 max-w-md">
-            <h1 className="text-[40px] xl:text-[46px] font-bold leading-[1.1] tracking-tight">
+            <h1 className="text-[40px] xl:text-[46px] font-serif tracking-[-0.02em] leading-[1.1]">
               Investing insights
               <br />
               for those who
@@ -123,7 +123,7 @@ export default function LoginPage() {
 
         <div className="w-full max-w-sm space-y-8">
           <div className="space-y-2">
-            <h2 className="text-[28px] font-bold tracking-tight text-foreground">
+            <h2 className="text-[28px] font-serif tracking-[-0.02em] text-foreground">
               Log in
             </h2>
             <p className="text-sm text-muted">

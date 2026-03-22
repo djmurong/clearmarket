@@ -11,7 +11,8 @@ export default function AnalyzePage() {
   const [error, setError] = useState<string | null>(null);
 
   const handleSubmit = async (data: {
-    text: string;
+    text?: string;
+    url?: string;
     ticker: string;
     source: SourceType;
   }) => {
@@ -42,17 +43,17 @@ export default function AnalyzePage() {
   };
 
   return (
-    <div className="mx-auto max-w-2xl px-6 py-10 space-y-10">
-      <div className="space-y-2">
-        <h1 className="text-2xl font-bold tracking-tight text-foreground">
+    <div className="mx-auto max-w-3xl px-8 py-12 space-y-10">
+      <div className="space-y-3">
+        <h1 className="text-4xl font-serif tracking-[-0.02em] text-foreground">
           Analyze
         </h1>
-        <p className="text-muted text-sm leading-relaxed">
-          Paste a professional financial opinion and get a simplified, beginner-friendly breakdown.
+        <p className="text-muted text-[15px] leading-relaxed max-w-xl">
+          Paste a professional financial opinion or article URL to get a simplified, beginner-friendly breakdown.
         </p>
       </div>
 
-      <div className="rounded-2xl border border-card-border bg-card p-6 sm:p-8">
+      <div className="rounded-3xl border border-card-border/60 bg-card p-8 sm:p-10 shadow-sm">
         <OpinionInput onSubmit={handleSubmit} loading={loading} />
       </div>
 
