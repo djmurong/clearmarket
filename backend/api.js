@@ -12,30 +12,28 @@ async function getTrending() {
     return res.json();
 }
 
-// --- Stock Price (Financial Modeling Prep) ---
+// --- Stock Price (Yahoo Finance) ---
 
 async function getStockPrice(ticker) {
     if (!ticker || typeof ticker !== 'string') {
         throw new Error('Invalid ticker: must be a non-empty string.');
     }
     const symbol = ticker.trim().toUpperCase();
-    const url = `https://financialmodelingprep.com/api/v3/quote-short/${encodeURIComponent(symbol)}?apikey=${encodeURIComponent(process.env.AV_API)}`;
-
-    const res = await fetch(url);
+    const url = `https://query1.finance.yahoo.com/v8/finance/chart/${symbol}?interval=1d&range=1d`;
+    const res = await fetch(url, { headers: { 'User-Agent': 'Mozilla/5.0' } });
     if (!res.ok) throw new Error(`Request failed with status ${res.status}`);
-
     const data = await res.json();
-    if (!Array.isArray(data) || data.length === 0) {
-        throw new Error(`No data found for "${symbol}".`);
-    }
-
-    const quote = data[0];
+    const meta = data?.chart?.result?.[0]?.meta;
+    if (!meta?.regularMarketPrice) throw new Error(`No data found for "${symbol}".`);
     return {
-        ticker: quote.symbol,
-        price: quote.price,
-        volume: quote.volume,
+        ticker: symbol,
+        price: meta.regularMarketPrice,
+        volume: meta.regularMarketVolume ?? 0,
+        change: meta.regularMarketPrice - meta.chartPreviousClose,
+        changePercent: ((meta.regularMarketPrice - meta.chartPreviousClose) / meta.chartPreviousClose) * 100,
     };
 }
+
 // --- Sentiment (AlphaVantage) ---
 
 async function getSentiment(symbols) {
@@ -46,7 +44,12 @@ async function getSentiment(symbols) {
         if (!res.ok) throw new Error(`Request failed with status ${res.status}`);
 
         const data = await res.json();
+        if (data?.Information) {
+            console.log(`[AV ${symbol}] Rate limited:`, data.Information);
+            continue;
+        }
         const scores = data?.feed?.map((article) => article?.overall_sentiment_score);
+        if (!scores || scores.length === 0) continue;
         const score = scores.reduce((acc, val) => acc + val, 0) / scores.length;
 
         let label;
@@ -80,43 +83,29 @@ Keep it short, friendly and easy to understand.`
     return chat.choices[0].message.content;
 }
 
-const { createClient } = require('@supabase/supabase-js');
+// --- Auth (Supabase) ---
 
-const supabase = createClient(
-  process.env.SUPABASE_URL,
-  process.env.SUPABASE_KEY
-);
+const supabase = require('./db');
 
-// --- Sign up a new user ---
 async function signUp(email, password, username) {
-  const { data, error } = await supabase.auth.signUp({ email, password }); // Supabase handles hashing and salting internally, so we just pass the plain password here
-  if (error) throw new Error(error.message);
-
-  // Create their profile row in the database
-  const { error: profileError } = await supabase // We use the user ID from the auth response to link the profile to the user
-    .from('profiles')
-    .insert({ id: data.user.id, username });
-
-  if (profileError) throw new Error(profileError.message);
-  return data.user;
+    const { data, error } = await supabase.auth.signUp({ email, password });
+    if (error) throw new Error(error.message);
+    const { error: profileError } = await supabase
+        .from('profiles')
+        .insert({ id: data.user.id, username });
+    if (profileError) throw new Error(profileError.message);
+    return data.user;
 }
 
-// --- Log in an existing user ---
 async function logIn(email, password) {
-  const { data, error } = await supabase.auth.signInWithPassword({ // Again, we just pass the plain password and let Supabase handle the security
-    email,
-    password
-  });
-  if (error) throw new Error(error.message);
-  return data.user;
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+    if (error) throw new Error(error.message);
+    return data.user;
 }
 
-// --- Log out ---
 async function logOut() {
-  const { error } = await supabase.auth.signOut();  // Supabase will handle clearing the session and cookies securely
-  if (error) throw new Error(error.message);
+    const { error } = await supabase.auth.signOut();
+    if (error) throw new Error(error.message);
 }
-
 
 module.exports = { getTrending, getStockPrice, getSentiment, explainStock, signUp, logIn, logOut };
-
