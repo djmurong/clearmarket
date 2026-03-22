@@ -90,6 +90,7 @@ const supabase = require('./db');
 async function signUp(email, password, username) {
     const { data, error } = await supabase.auth.signUp({ email, password });
     if (error) throw new Error(error.message);
+    if (!data.user) throw new Error('Check your email to confirm your account before signing in.');
     const { error: profileError } = await supabase
         .from('profiles')
         .insert({ id: data.user.id, username });
@@ -100,7 +101,7 @@ async function signUp(email, password, username) {
 async function logIn(email, password) {
     const { data, error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) throw new Error(error.message);
-    return data.user;
+    return { user: data.user, session: data.session };
 }
 
 async function logOut() {

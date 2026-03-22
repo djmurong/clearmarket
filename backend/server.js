@@ -88,8 +88,8 @@ app.post('/api/auth/login', async (req, res) => {
         if (!email || !password) {
             return res.status(400).json({ error: 'email and password are required' });
         }
-        const user = await logIn(email, password);
-        res.json(user);
+        const { user, session } = await logIn(email, password);
+        res.json({ user: { id: user.id, email: user.email }, token: session?.access_token ?? '' });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
