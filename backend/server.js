@@ -1,7 +1,7 @@
 require('dotenv').config({ path: require('path').join(__dirname, '.env') });
 const express = require('express');
 const cors = require('cors');
-const { getTrending, getStockPrice, getSentiment, explainStock } = require('./api');
+const { getTrending, getStockPrice, getSentiment, explainStock, signUp, logIn, logOut } = require('./api');
 const supabase = require('./db');
 
 const app = express();

@@ -19,19 +19,21 @@ async function getStockPrice(ticker) {
         throw new Error('Invalid ticker: must be a non-empty string.');
     }
     const symbol = ticker.trim().toUpperCase();
-    const url = `https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol=${symbol}&apikey=${process.env.ALPHA_API_KEY}`;
+    const url = `https://financialmodelingprep.com/api/v3/quote-short/${encodeURIComponent(symbol)}?apikey=${encodeURIComponent(process.env.AV_API)}`;
+
     const res = await fetch(url);
     if (!res.ok) throw new Error(`Request failed with status ${res.status}`);
+
     const data = await res.json();
-    const quote = data["Global Quote"];
-    if (!quote || !quote["05. price"]) {
+    if (!Array.isArray(data) || data.length === 0) {
         throw new Error(`No data found for "${symbol}".`);
     }
+
+    const quote = data[0];
     return {
-        ticker: quote["01. symbol"],
-        price: parseFloat(quote["05. price"]),
-        volume: parseInt(quote["06. volume"]),
-        change: quote["10. change percent"],
+        ticker: quote.symbol,
+        price: quote.price,
+        volume: quote.volume,
     };
 }
 // --- Sentiment (AlphaVantage) ---
@@ -78,4 +80,43 @@ Keep it short, friendly and easy to understand.`
     return chat.choices[0].message.content;
 }
 
-module.exports = { getTrending, getStockPrice, getSentiment, explainStock };
+const { createClient } = require('@supabase/supabase-js');
+
+const supabase = createClient(
+  process.env.SUPABASE_URL,
+  process.env.SUPABASE_KEY
+);
+
+// --- Sign up a new user ---
+async function signUp(email, password, username) {
+  const { data, error } = await supabase.auth.signUp({ email, password }); // Supabase handles hashing and salting internally, so we just pass the plain password here
+  if (error) throw new Error(error.message);
+
+  // Create their profile row in the database
+  const { error: profileError } = await supabase // We use the user ID from the auth response to link the profile to the user
+    .from('profiles')
+    .insert({ id: data.user.id, username });
+
+  if (profileError) throw new Error(profileError.message);
+  return data.user;
+}
+
+// --- Log in an existing user ---
+async function logIn(email, password) {
+  const { data, error } = await supabase.auth.signInWithPassword({ // Again, we just pass the plain password and let Supabase handle the security
+    email,
+    password
+  });
+  if (error) throw new Error(error.message);
+  return data.user;
+}
+
+// --- Log out ---
+async function logOut() {
+  const { error } = await supabase.auth.signOut();  // Supabase will handle clearing the session and cookies securely
+  if (error) throw new Error(error.message);
+}
+
+
+module.exports = { getTrending, getStockPrice, getSentiment, explainStock, signUp, logIn, logOut };
+
