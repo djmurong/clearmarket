@@ -27,7 +27,9 @@ export default function ResultCard({
       : "Earnings";
 
   return (
-    <article className="rounded-2xl border border-card-border bg-card p-5 sm:p-6 space-y-4 hover:shadow-sm transition-shadow">
+    <article className="rounded-2xl border border-card-border bg-card p-5 sm:p-6 space-y-5 hover:shadow-sm transition-shadow">
+
+      {/* Header */}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-2.5">
           {result.ticker && result.ticker !== "N/A" && (
@@ -43,12 +45,52 @@ export default function ResultCard({
         </div>
       </div>
 
+      {/* Topic */}
+      {result.topic && (
+        <p className="text-xs font-medium text-muted uppercase tracking-wide">
+          {result.topic}
+        </p>
+      )}
+
+      {/* Main Summary */}
       <p className="text-sm sm:text-[15px] leading-relaxed text-foreground">
         {eli12 ? result.eli12Summary : result.simpleSummary}
       </p>
 
+      {/* Sentiment Reason */}
+      {result.sentimentReason && (
+        <div className="rounded-xl bg-muted/10 border border-card-border/50 px-4 py-3">
+          <p className="text-xs font-medium text-muted mb-1">Why this sentiment?</p>
+          <p className="text-sm text-foreground leading-relaxed">{result.sentimentReason}</p>
+        </div>
+      )}
+
+      {/* Key Points */}
+      {result.keyPoints && result.keyPoints.length > 0 && (
+        <div className="space-y-2">
+          <p className="text-xs font-medium text-muted uppercase tracking-wide">Key Takeaways</p>
+          <ul className="space-y-2">
+            {result.keyPoints.map((point, i) => (
+              <li key={i} className="flex items-start gap-2.5 text-sm text-foreground leading-relaxed">
+                <span className="mt-1.5 w-1.5 h-1.5 rounded-full bg-foreground/30 shrink-0" />
+                {point}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
       <ReasonTags tags={result.reasonTags} />
       <WhatItMeans text={result.whatItMeans} />
+
+      {/* Watch Out */}
+      {result.watchOut && (
+        <div className="rounded-xl border border-yellow-200/40 bg-yellow-50/30 px-4 py-3">
+          <p className="text-xs font-medium text-yellow-700 mb-1">⚠️ Watch out</p>
+          <p className="text-sm text-foreground leading-relaxed">{result.watchOut}</p>
+        </div>
+      )}
+
       <OriginalTextToggle text={result.originalText} />
 
       <time className="block text-[11px] text-muted-dim">

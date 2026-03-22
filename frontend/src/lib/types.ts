@@ -1,6 +1,20 @@
 export type Sentiment = "positive" | "negative" | "neutral";
 
-export type ReasonTag = "earnings" | "economy" | "competition" | "regulation";
+export type ReasonTag =
+  | "earnings"
+  | "economy"
+  | "competition"
+  | "regulation"
+  | "stocks"
+  | "interest-rates"
+  | "inflation"
+  | "crypto"
+  | "bonds"
+  | "housing"
+  | "jobs"
+  | "energy"
+  | "tech"
+  | "banking";
 
 export type SourceType = "analyst_report" | "news" | "earnings_summary";
 
@@ -15,15 +29,17 @@ export interface InterpretationResult {
   ticker: string;
   source: SourceType;
   originalText: string;
+  topic: string;
   simpleSummary: string;
   eli12Summary: string;
   sentiment: Sentiment;
+  sentimentReason: string;
+  keyPoints: string[];
   reasonTags: ReasonTag[];
   whatItMeans: string;
+  watchOut: string;
   timestamp: string;
 }
-
-// Paper Trading
 
 export type TradeAction = "buy" | "sell";
 
