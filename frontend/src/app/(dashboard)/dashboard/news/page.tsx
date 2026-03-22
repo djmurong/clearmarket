@@ -5,22 +5,18 @@ import {
   categoryLabels,
   type NewsArticle,
   type NewsCategory,
-  type NewsResponse,
 } from "@/lib/mockNews";
+import api from "@/lib/apiClient";
 import TrendingStory from "@/components/news/TrendingStory";
 import NewsCard from "@/components/news/NewsCard";
 
 const allCategories: ("all" | NewsCategory)[] = [
   "all",
-  "markets",
-  "earnings",
-  "economy",
+  "general",
+  "forex",
   "crypto",
-  "tech",
-  "commodities",
+  "merger",
 ];
-
-const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:3000";
 
 export default function NewsPage() {
   const [activeCategory, setActiveCategory] = useState<"all" | NewsCategory>(
@@ -35,14 +31,12 @@ export default function NewsPage() {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(`${BACKEND_URL}/api/news?mode=both&limit=30`);
-      if (!res.ok) throw new Error(`Server returned ${res.status}`);
-      const data: NewsResponse = await res.json();
-      if (data.error && (!data.latest || data.latest.length === 0)) {
-        setError(data.error);
-      }
-      setArticles(data.latest || []);
-      setHottest(data.hottest?.slice(0, 4) || []);
+      const [latest, hot] = await Promise.all([
+        api.news({ sort: "latest", limit: 30 }),
+        api.news({ sort: "hottest", limit: 4 }),
+      ]);
+      setArticles(latest);
+      setHottest(hot);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load news");
     } finally {

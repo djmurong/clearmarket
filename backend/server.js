@@ -3,9 +3,10 @@ const express = require('express');
 const cors = require('cors');
 const { getTrending, getStockPrice, getSentiment, explainStock, signUp, logIn, logOut } = require('./api');
 const supabase = require('./db');
+const { syncNews, startScheduledSync, stopScheduledSync } = require('./jobs/newsSync');
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = parseInt(process.env.PORT, 10) || 3001;
 
 app.use(cors());
 app.use(express.json());
@@ -292,12 +293,69 @@ app.delete('/api/watchlist/:id', async (req, res) => {
     }
 });
 
-// GET /api/news
+// GET /api/news?sort=latest|hottest&limit=30&category=general
 app.get('/api/news', async (req, res) => {
     try {
-        const { data, error } = await supabase.from('news').select('*').order('publish_date', { ascending: false });
+        const sort = req.query.sort === 'hottest' ? 'hottest' : 'latest';
+        const limit = Math.min(parseInt(req.query.limit, 10) || 30, 100);
+        const category = req.query.category ? String(req.query.category) : null;
+        const symbol = req.query.symbol ? String(req.query.symbol).toUpperCase() : null;
+
+        const { data, error } = await supabase
+            .from('news')
+            .select('*')
+            .limit(300);
+
         if (error) return res.status(500).json({ error: error.message });
-        res.json(data);
+
+        const normalized = (data || []).map((row) => {
+            const publishedAt = row.published_at || row.publish_date || row.created_at || new Date(0).toISOString();
+            const symbols = Array.isArray(row.symbols)
+                ? row.symbols
+                : typeof row.symbols === 'string' && row.symbols.length > 0
+                    ? row.symbols.split(',').map((s) => s.trim().toUpperCase()).filter(Boolean)
+                    : [];
+
+            return {
+                id: String(row.id ?? row.finnhub_id ?? `${row.url}-${publishedAt}`),
+                finnhub_id: row.finnhub_id ?? 0,
+                title: row.title || '',
+                summary: row.summary || '',
+                url: row.url || '',
+                source: row.source || 'Unknown',
+                published_at: publishedAt,
+                image_url: row.image_url || row.image || null,
+                symbols,
+                category: row.category || 'general',
+                hotness_score: Number(row.hotness_score ?? 0),
+            };
+        });
+
+        const filtered = normalized.filter((article) => {
+            if (category && article.category !== category) return false;
+            if (symbol && !article.symbols.includes(symbol)) return false;
+            return true;
+        });
+
+        const sorted = filtered.sort((a, b) => {
+            if (sort === 'hottest') {
+                if (b.hotness_score !== a.hotness_score) return b.hotness_score - a.hotness_score;
+            }
+            return new Date(b.published_at).getTime() - new Date(a.published_at).getTime();
+        });
+
+        res.json(sorted.slice(0, limit));
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// POST /api/admin/news/sync
+app.post('/api/admin/news/sync', async (req, res) => {
+    try {
+        const category = req.body.category || process.env.NEWS_SYNC_CATEGORY || 'general';
+        const result = await syncNews(category);
+        res.json(result);
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
@@ -335,18 +393,52 @@ app.post('/api/user_news/mark-seen', async (req, res) => {
     }
 });
 
-const server = app.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
-});
+let server;
+let syncStarted = false;
 
-server.on('error', (err) => {
-    console.error('Server error:', err);
-    process.exit(1);
-});
+function maybeStartSync() {
+    if (syncStarted) return;
+    if (process.env.FINNHUB_API_KEY) {
+        startScheduledSync();
+    } else {
+        console.log('[newsSync] FINNHUB_API_KEY not set — scheduled sync disabled');
+    }
+    syncStarted = true;
+}
+
+function nextPort(port) {
+    const current = Number(port);
+    if (current === 3000) return 3001;
+    if (current === 3001) return 3002;
+    return current + 1;
+}
+
+function startServer(port, attempt = 0) {
+    const activeServer = app.listen(port, () => {
+        console.log(`Server running on port ${port}`);
+        maybeStartSync();
+    });
+
+    activeServer.on('error', (err) => {
+        if (err.code === 'EADDRINUSE' && attempt < 3) {
+            const fallbackPort = nextPort(port);
+            console.warn(`Port ${port} is in use. Retrying on port ${fallbackPort}...`);
+            server = startServer(fallbackPort, attempt + 1);
+            return;
+        }
+        console.error('Server error:', err);
+        process.exit(1);
+    });
+
+    return activeServer;
+}
+
+server = startServer(PORT, 0);
 
 // Keep the process alive
 process.on('SIGTERM', () => {
     console.log('SIGTERM signal received: closing HTTP server');
+    stopScheduledSync();
     server.close(() => {
         console.log('HTTP server closed');
         process.exit(0);

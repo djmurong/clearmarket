@@ -1,12 +1,13 @@
 "use client";
 
 import { useState } from "react";
-import { NewsArticle, getTimeAgo } from "@/lib/mockNews";
+import { NewsArticle, getCategoryColor, getTimeAgo } from "@/lib/mockNews";
 
-type ActivePanel = null | "simplified" | "takeaway";
+type ActivePanel = null | "summary" | "link";
 
 export default function TrendingStory({ article }: { article: NewsArticle }) {
   const [active, setActive] = useState<ActivePanel>(null);
+  const color = getCategoryColor(article.category);
 
   function toggle(panel: ActivePanel) {
     setActive((prev) => (prev === panel ? null : panel));
@@ -14,12 +15,17 @@ export default function TrendingStory({ article }: { article: NewsArticle }) {
 
   return (
     <article className="group rounded-2xl border border-card-border bg-card overflow-hidden hover:shadow-sm transition-shadow flex flex-col">
-      {/* Color banner */}
       <div
-        className="h-28 flex items-end p-4"
-        style={{ background: `linear-gradient(135deg, ${article.imageColor}, ${article.imageColor}cc)` }}
+        className="h-36 flex items-end p-4 bg-cover bg-center relative"
+        style={article.image_url
+          ? { backgroundImage: `url(${article.image_url})` }
+          : { background: `linear-gradient(135deg, ${color}, ${color}cc)` }
+        }
       >
-        <span className="rounded-full bg-white/20 backdrop-blur-sm px-2.5 py-0.5 text-[11px] font-medium text-white">
+        {article.image_url && (
+          <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
+        )}
+        <span className="relative rounded-full bg-white/20 backdrop-blur-sm px-2.5 py-0.5 text-[11px] font-medium text-white">
           Trending
         </span>
       </div>
@@ -28,7 +34,7 @@ export default function TrendingStory({ article }: { article: NewsArticle }) {
         <div className="flex items-center gap-2 text-[11px] text-muted">
           <span className="font-medium">{article.source}</span>
           <span>&middot;</span>
-          <span>{getTimeAgo(article.publishedAt)}</span>
+          <span>{getTimeAgo(article.published_at)}</span>
         </div>
 
         <h3 className="text-sm font-semibold text-foreground leading-snug line-clamp-2 group-hover:text-accent transition-colors">
@@ -53,12 +59,11 @@ export default function TrendingStory({ article }: { article: NewsArticle }) {
         )}
       </div>
 
-      {/* Action buttons */}
       <div className="flex border-t border-card-border divide-x divide-card-border mt-auto">
         <button
-          onClick={() => toggle("simplified")}
+          onClick={() => toggle("summary")}
           className={`flex-1 flex items-center justify-center gap-1 px-2 py-2 text-[11px] font-medium transition-colors ${
-            active === "simplified"
+            active === "summary"
               ? "bg-accent-surface text-accent"
               : "text-muted hover:text-foreground hover:bg-surface"
           }`}
@@ -66,54 +71,52 @@ export default function TrendingStory({ article }: { article: NewsArticle }) {
           <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
           </svg>
-          Simplify
+          Summary
         </button>
         <button
-          onClick={() => toggle("takeaway")}
+          onClick={() => toggle("link")}
           className={`flex-1 flex items-center justify-center gap-1 px-2 py-2 text-[11px] font-medium transition-colors ${
-            active === "takeaway"
+            active === "link"
               ? "bg-accent-surface text-accent"
               : "text-muted hover:text-foreground hover:bg-surface"
           }`}
         >
           <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
           </svg>
-          Takeaway
+          Read
         </button>
       </div>
 
-      {/* Expandable panels */}
-      {active === "simplified" && (
+      {active === "summary" && (
         <div className="border-t border-accent-border bg-accent-surface px-4 py-3 space-y-1">
           <p className="text-[10px] font-semibold text-accent uppercase tracking-widest">
-            Sentiment
+            Summary
           </p>
           <p className="text-xs text-foreground leading-relaxed">
-            {article.sentimentLabel} (score: {article.sentimentScore.toFixed(2)})
+            {article.summary}
+          </p>
+          <p className="text-[10px] text-muted mt-1">
+            Hotness: {article.hotness_score.toFixed(0)}
           </p>
         </div>
       )}
 
-      {active === "takeaway" && (
+      {active === "link" && (
         <div className="border-t border-accent-border bg-accent-surface px-4 py-3 space-y-1">
           <p className="text-[10px] font-semibold text-accent uppercase tracking-widest">
-            Key Info
+            Full Article
           </p>
           <p className="text-xs text-foreground leading-relaxed">
-            Relevance: {(article.relevanceScore * 100).toFixed(0)}%
             {article.url && (
-              <>
-                {" — "}
-                <a
-                  href={article.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="underline text-accent"
-                >
-                  Read full article
-                </a>
-              </>
+              <a
+                href={article.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="underline text-accent"
+              >
+                Read full article at {article.source}
+              </a>
             )}
           </p>
         </div>
